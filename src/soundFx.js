@@ -1,8 +1,9 @@
-// Web Audio API Synthesizer for ultra-clean UI sound effects
+// Web Audio API Synthesizer & Cyberpunk BGM Sound Controller
 class SoundController {
   constructor() {
     this.audioCtx = null;
-    this.enabled = false; // Muted by default or enabled by user toggle
+    this.enabled = false;
+    this.bgm = null;
   }
 
   init() {
@@ -15,13 +16,29 @@ class SoundController {
     if (this.audioCtx && this.audioCtx.state === 'suspended') {
       this.audioCtx.resume();
     }
+
+    if (!this.bgm && typeof window !== 'undefined') {
+      this.bgm = new Audio('/bgm.mp3');
+      this.bgm.loop = true;
+      this.bgm.volume = 0.35; // Medium intensity, balanced background volume
+    }
   }
 
   toggleSound() {
     this.enabled = !this.enabled;
+    this.init();
+
     if (this.enabled) {
-      this.init();
       this.playClick();
+      if (this.bgm) {
+        this.bgm.play().catch(() => {
+          // Autoplay policy fallback
+        });
+      }
+    } else {
+      if (this.bgm) {
+        this.bgm.pause();
+      }
     }
     return this.enabled;
   }

@@ -9,6 +9,148 @@ import './App.css';
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 // ==========================================
+// CRIMSON CYBER PARTICLE CONFIGURATION
+// (Tweak these numbers anytime to adjust particle looks!)
+// ==========================================
+export const PARTICLE_CONFIG = {
+  count: 45,                  // Total number of floating embers
+  minSize: 1.2,               // Smallest ember radius (px)
+  maxSize: 3.2,               // Largest ember radius (px)
+  speedY: -0.35,              // Upward floating speed
+  speedXSpread: 0.25,         // Sideways drift variation
+  color: 'rgba(220, 38, 38,', // Crimson red base color
+  mouseRepelDistance: 90,     // Distance at which particles flee from cursor (px)
+};
+
+const ParticleCanvas = () => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let animationFrameId;
+
+    let width = (canvas.width = canvas.parentElement.offsetWidth);
+    let height = (canvas.height = canvas.parentElement.offsetHeight);
+
+    const handleResize = () => {
+      if (!canvas || !canvas.parentElement) return;
+      width = canvas.width = canvas.parentElement.offsetWidth;
+      height = canvas.height = canvas.parentElement.offsetHeight;
+    };
+    window.addEventListener('resize', handleResize);
+
+    let mouseX = -9999;
+    let mouseY = -9999;
+    const handleMouseMove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+
+    // Generate Initial Particles
+    const particles = [];
+    for (let i = 0; i < PARTICLE_CONFIG.count; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        radius: Math.random() * (PARTICLE_CONFIG.maxSize - PARTICLE_CONFIG.minSize) + PARTICLE_CONFIG.minSize,
+        vx: (Math.random() - 0.5) * PARTICLE_CONFIG.speedXSpread,
+        vy: PARTICLE_CONFIG.speedY - Math.random() * 0.2,
+        alpha: Math.random() * 0.6 + 0.2,
+      });
+    }
+
+    const render = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Mouse repulsion effect
+        const dx = p.x - mouseX;
+        const dy = p.y - mouseY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < PARTICLE_CONFIG.mouseRepelDistance) {
+          const force = (PARTICLE_CONFIG.mouseRepelDistance - dist) / PARTICLE_CONFIG.mouseRepelDistance;
+          p.x += (dx / dist) * force * 3.5;
+          p.y += (dy / dist) * force * 3.5;
+        }
+
+        // Screen boundary wrapping
+        if (p.y < -10) {
+          p.y = height + 10;
+          p.x = Math.random() * width;
+        }
+        if (p.x < -10) p.x = width + 10;
+        if (p.x > width + 10) p.x = -10;
+
+        // Draw particle ember
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `${PARTICLE_CONFIG.color} ${p.alpha})`;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = 'rgba(239, 68, 68, 0.8)';
+        ctx.fill();
+      }
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', handleMouseMove);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full pointer-events-none z-10"
+    />
+  );
+};
+
+// ==========================================
+// LIVE INDIAN STANDARD TIME (IST) CLOCK
+// ==========================================
+const LiveClock = () => {
+  const [time, setTime] = useState('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const options = {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      };
+      setTime(now.toLocaleTimeString('en-US', options));
+    };
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="hidden xl:flex items-center gap-2 font-mono text-[11px] text-zinc-400 bg-zinc-950/80 border border-zinc-800/80 px-3 py-1.5 rounded-full">
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+      <span>PUNE, IN // {time || '00:00:00'} IST</span>
+    </div>
+  );
+};
+
+// ==========================================
 // INTERACTIVE CUSTOM CURSOR (Context-Aware)
 // ==========================================
 const CustomCursor = () => {
@@ -67,9 +209,96 @@ const CustomCursor = () => {
 };
 
 // ==========================================
-// TOP NAVIGATION HEADER WITH AUDIO TOGGLE
+// HACKER COMMAND PALETTE (Ctrl + K)
 // ==========================================
-const Navbar = ({ lenisRef }) => {
+const CommandPalette = ({ isOpen, onClose, scrollTo, lenisRef }) => {
+  const [query, setQuery] = useState('');
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const commands = [
+    { id: 'projects', label: 'Go to Featured Projects', category: 'NAVIGATION', action: () => scrollTo('projects') },
+    { id: 'showreel', label: 'Launch Cinematic Showreel', category: 'NAVIGATION', action: () => scrollTo('showreel') },
+    { id: 'about', label: 'The Architect (Bio & Skills)', category: 'NAVIGATION', action: () => scrollTo('about') },
+    { id: 'contact', label: 'Initiate Contact Protocol', category: 'NAVIGATION', action: () => scrollTo('contact') },
+    { id: 'github', label: 'Open GitHub Profile', category: 'EXTERNAL', action: () => window.open('https://github.com/kshitijshinde22-hue', '_blank') },
+    { id: 'clinic', label: 'Open Healthcare ERP Repo', category: 'PROJECT', action: () => window.open('https://github.com/kshitijshinde22-hue/dr-pakhare-clinic', '_blank') },
+    { id: 'linkedin', label: 'Connect on LinkedIn', category: 'EXTERNAL', action: () => window.open('https://www.linkedin.com/in/kshitij-shinde-3b02622b5', '_blank') },
+    { id: 'email', label: 'Send Email Directly', category: 'CONTACT', action: () => window.location.href = 'mailto:kshitijshinde12321@gmail.com' },
+    { id: 'sound', label: 'Toggle Synthetic Audio FX', category: 'SYSTEM', action: () => soundFx.toggleSound() },
+    { id: 'toman', label: 'Tokyo Manji Easter Egg // 無敵', category: 'SECRET', action: () => alert('🔥 TOKYO MANJI GANG - EST. 2026 // KSHITIJ SHINDE') },
+  ];
+
+  const filtered = commands.filter(c =>
+    c.label.toLowerCase().includes(query.toLowerCase()) ||
+    c.category.toLowerCase().includes(query.toLowerCase()) ||
+    c.id.toLowerCase().includes(query.toLowerCase())
+  );
+
+  return (
+    <div className="fixed inset-0 z-[130] flex items-start justify-center pt-24 px-4 bg-black/80 backdrop-blur-xl">
+      <div className="relative w-full max-w-2xl bg-zinc-950 border border-red-600/50 rounded-2xl p-4 shadow-[0_0_60px_rgba(220,38,38,0.25)] overflow-hidden">
+        {/* Search Header */}
+        <div className="flex items-center gap-3 border-b border-zinc-800 pb-3 px-2">
+          <span className="text-red-500 font-mono text-sm">❯</span>
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Type a command or search (e.g. projects, github, email, toman)..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full bg-transparent text-white font-mono text-sm placeholder-zinc-500 focus:outline-none cursor-none"
+          />
+          <span className="text-zinc-500 font-mono text-[10px] border border-zinc-800 px-2 py-0.5 rounded">
+            ESC
+          </span>
+        </div>
+
+        {/* Command Results */}
+        <div className="mt-3 max-h-[320px] overflow-y-auto flex flex-col gap-1 pr-1">
+          {filtered.length > 0 ? (
+            filtered.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => {
+                  soundFx.playClick();
+                  item.action();
+                  onClose();
+                }}
+                onMouseEnter={() => soundFx.playHover()}
+                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-red-950/30 border border-transparent hover:border-red-600/40 text-left transition-all cursor-none group"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-red-500 font-mono text-xs opacity-60 group-hover:opacity-100">//</span>
+                  <span className="text-zinc-200 font-mono text-sm group-hover:text-white font-medium">{item.label}</span>
+                </div>
+                <span className="text-[10px] font-mono text-zinc-500 group-hover:text-red-400 uppercase tracking-widest border border-zinc-800 px-2 py-0.5 rounded">
+                  {item.category}
+                </span>
+              </button>
+            ))
+          ) : (
+            <div className="p-6 text-center text-zinc-500 font-mono text-xs">
+              No matching protocol found for "{query}".
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// TOP NAVIGATION HEADER WITH AUDIO & CLOCK
+// ==========================================
+const Navbar = ({ lenisRef, onOpenCmd }) => {
   const [audioActive, setAudioActive] = useState(false);
 
   const handleAudioToggle = () => {
@@ -143,21 +372,52 @@ const Navbar = ({ lenisRef }) => {
         </button>
       </nav>
 
-      {/* Audio Sound FX Toggle */}
-      <button
-        onClick={handleAudioToggle}
-        onMouseEnter={() => {
-          soundFx.playHover();
-          window.dispatchEvent(new CustomEvent("cursorHover", { detail: "AUDIO" }));
-        }}
-        onMouseLeave={() => window.dispatchEvent(new CustomEvent("cursorLeave"))}
-        className={`font-mono text-xs tracking-widest px-3 py-1.5 rounded-md border transition-all cursor-none ${audioActive
-          ? 'border-red-600 text-red-500 bg-red-950/30 shadow-[0_0_12px_rgba(220,38,38,0.4)]'
-          : 'border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700'
-          }`}
-      >
-        [ AUDIO: {audioActive ? 'ON' : 'MUTED'} ]
-      </button>
+      {/* Right Controls: IST Clock + Cmd Palette + Audio Equalizer Toggle */}
+      <div className="flex items-center gap-3">
+        {/* Live Indian Timezone Clock */}
+        <LiveClock />
+
+        {/* Command Palette Trigger Button */}
+        <button
+          onClick={onOpenCmd}
+          onMouseEnter={() => {
+            soundFx.playHover();
+            window.dispatchEvent(new CustomEvent("cursorHover", { detail: "CMD" }));
+          }}
+          onMouseLeave={() => window.dispatchEvent(new CustomEvent("cursorLeave"))}
+          className="hidden sm:flex items-center gap-1.5 font-mono text-xs text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-700 bg-zinc-950/60 px-3 py-1.5 rounded-md transition-all cursor-none"
+        >
+          <span>⌘</span>
+          <span>CTRL + K</span>
+        </button>
+
+        {/* Audio Sound FX Toggle with Equalizer Waveform */}
+        <button
+          onClick={handleAudioToggle}
+          onMouseEnter={() => {
+            soundFx.playHover();
+            window.dispatchEvent(new CustomEvent("cursorHover", { detail: "AUDIO" }));
+          }}
+          onMouseLeave={() => window.dispatchEvent(new CustomEvent("cursorLeave"))}
+          className={`flex items-center gap-2 font-mono text-xs tracking-widest px-3 py-1.5 rounded-md border transition-all cursor-none ${audioActive
+            ? 'border-red-600 text-red-500 bg-red-950/30 shadow-[0_0_12px_rgba(220,38,38,0.4)]'
+            : 'border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700'
+            }`}
+        >
+          {/* Animated Equalizer Waveform Bars */}
+          {audioActive ? (
+            <div className="flex items-end gap-0.5 h-3.5">
+              <span className="w-0.5 bg-red-500 rounded-full eq-bar-1" />
+              <span className="w-0.5 bg-red-500 rounded-full eq-bar-2" />
+              <span className="w-0.5 bg-red-500 rounded-full eq-bar-3" />
+              <span className="w-0.5 bg-red-500 rounded-full eq-bar-4" />
+            </div>
+          ) : (
+            <span className="w-1.5 h-1.5 rounded-full bg-zinc-600" />
+          )}
+          <span>AUDIO: {audioActive ? 'ON' : 'MUTED'}</span>
+        </button>
+      </div>
     </header>
   );
 };
@@ -285,10 +545,10 @@ const Footer = () => {
   }, { scope: footerRef });
 
   const links = [
-    { label: 'LinkedIn', url: 'https://linkedin.com' },
-    { label: 'GitHub', url: 'https://github.com' },
-    { label: 'Email', url: 'mailto:kshitij@example.com' },
-    { label: 'Instagram', url: 'https://instagram.com' }
+    { label: 'LinkedIn', url: 'https://www.linkedin.com/in/kshitij-shinde-3b02622b5' },
+    { label: 'GitHub', url: 'https://github.com/kshitijshinde22-hue' },
+    { label: 'Email', url: 'mailto:kshitijshinde12321@gmail.com' },
+    { label: 'Instagram', url: 'https://instagram.com/kshitij_3332' }
   ];
 
   return (
@@ -297,7 +557,7 @@ const Footer = () => {
         <div className="marquee-track flex gap-12 items-center text-red-600/80 font-mono text-xl tracking-widest uppercase w-max">
           {[...Array(2)].map((_, i) => (
             <div key={i} className="flex gap-12 items-center shrink-0">
-              <span>// KSHITIJ</span>
+              <span>// KSHITIJ SHINDE</span>
               <span>// FULL STACK ARCHITECT</span>
               <span>// JAVA & MERN EXPERT</span>
               <span>// TOKYO MANJI CREW</span>
@@ -317,7 +577,7 @@ const Footer = () => {
           onMouseLeave={() => window.dispatchEvent(new CustomEvent("cursorLeave"))}
           onClick={() => {
             soundFx.playClick();
-            window.location.href = "mailto:kshitij@example.com";
+            window.location.href = "mailto:kshitijshinde12321@gmail.com";
           }}
         >
           LET'S BUILD.
@@ -355,6 +615,7 @@ export default function App() {
   const [wordIndex, setWordIndex] = useState(0);
   const [selectedProject, setSelectedProject] = useState(null);
   const [showreelModal, setShowreelModal] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
 
   const containerRef = useRef(null);
   const preloaderRef = useRef(null);
@@ -364,6 +625,34 @@ export default function App() {
   const horizontalSectionRef = useRef(null);
   const horizontalTrackRef = useRef(null);
   const lenisInstanceRef = useRef(null);
+
+  // Global Ctrl + K / Cmd + K Shortcut Listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCmdOpen((prev) => !prev);
+      }
+      if (e.key === 'Escape') {
+        setCmdOpen(false);
+        setSelectedProject(null);
+        setShowreelModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const scrollToSection = (id) => {
+    const elem = document.getElementById(id);
+    if (elem) {
+      if (lenisInstanceRef.current) {
+        lenisInstanceRef.current.scrollTo(elem);
+      } else {
+        elem.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
 
   const words = [
     "नमस्ते",
@@ -381,35 +670,39 @@ export default function App() {
   const projects = [
     {
       id: "01",
-      title: "MERN Stack E-Commerce Engine",
-      category: "Full Stack Development",
-      tags: ["React", "Node.js", "MongoDB", "Tailwind"],
-      description: "Automated sliding carousels, responsive layouts, JWT authentication, and secure payment backend endpoints.",
-      details: "Engineered scalable REST APIs with Node.js and MongoDB. Designed high-performance React frontends with Tailwind CSS and responsive UI state caching."
+      title: "Healthcare ERP & Dynamic Booking Engine",
+      category: "ENTERPRISE HEALTHCARE SaaS",
+      tags: ["Python", "Django", "MySQL", "AJAX", "JavaScript"],
+      description: "Architected a multi-role clinical management system featuring an AJAX-driven SPA booking engine, real-time conflict-resolution scheduling, and secure RBAC with a compliance-focused MySQL backend.",
+      details: "Engineered multi-tier RBAC (Patient, Doctor, Receptionist, Admin) with strict session validation. Built dynamic AJAX scheduling engine (/api/get-slots/) with real-time MySQL conflict prevention, timezone serialization, and SET_NULL database integrity constraints for historical patient invoices.",
+      github: "https://github.com/kshitijshinde22-hue/dr-pakhare-clinic"
     },
     {
       id: "02",
-      title: "Core Java High-Speed Processing",
-      category: "Backend Systems",
-      tags: ["Java", "MySQL", "OOP", "Data Structures"],
-      description: "Architected optimized database queries, multi-threaded algorithms, and modular backend system logic.",
-      details: "Leveraged advanced object-oriented design patterns, connection pooling, and low-latency data structures for high-volume transactions."
+      title: "Tokyo Manji 3D Cyberpunk Portfolio",
+      category: "FRONTEND & UI ARCHITECTURE",
+      tags: ["React", "GSAP", "Tailwind", "Lenis", "Web Audio"],
+      description: "A high-performance cinematic developer portfolio built with React 19, GSAP ScrollTrigger pinned horizontal timelines, Lenis inertia scrolling, and synthetic Web Audio API sound synthesis.",
+      details: "Orchestrated 60fps smooth scrolling with Lenis and GSAP ScrollTrigger. Engineered context-aware dynamic cursor followers, 3D card tilt physics, CRT scanline HUD overlays, and zero-asset Web Audio API synthesizers.",
+      github: "https://github.com/kshitijshinde22-hue"
     },
     {
       id: "03",
-      title: "Python & Django Full App",
-      category: "Web Application",
-      tags: ["Python", "Django", "REST APIs", "SQL"],
-      description: "Clean MVC architecture with custom routing, robust security policies, and scalable database modeling.",
-      details: "Implemented robust ORM queries, Django REST Framework serialization, role-based user access controls, and custom middleware handlers."
+      title: "High-Throughput Banking & Transaction Engine",
+      category: "BACKEND & FINTECH SYSTEMS",
+      tags: ["Java", "Spring Boot", "MySQL", "JPA/Hibernate", "REST APIs"],
+      description: "Engineered a low-latency financial transaction engine featuring ACID-compliant fund transfers, database row-locking, and modular RESTful microservice architecture.",
+      details: "Implemented @Transactional isolation levels to prevent race conditions during high-volume concurrent wallet transfers. Integrated connection pooling, modular service-repository architecture, and comprehensive exception handling.",
+      github: "https://github.com/kshitijshinde22-hue"
     },
     {
       id: "04",
-      title: "Docker Microservice Infrastructure",
-      category: "DevOps & Cloud",
-      tags: ["Docker", "Containers", "CI/CD", "Linux"],
-      description: "Containerized multi-tier web applications for seamless local, staging, and production deployment.",
-      details: "Created modular Docker Compose environment files, optimized build layer caching, and automated integration deployment pipelines."
+      title: "Real-Time Task & Inventory Management System",
+      category: "ENTERPRISE MANAGEMENT SaaS",
+      tags: ["Java", "Spring Boot", "Docker", "JWT", "MySQL"],
+      description: "Containerized full-stack workflow engine with JWT role-based security, low-stock threshold triggers, and real-time order status pipelines.",
+      details: "Built modular REST endpoints secured by stateless JWT authentication. Configured Docker multi-stage container deployment pipelines and optimized MySQL query indexing for inventory ledger reporting.",
+      github: "https://github.com/kshitijshinde22-hue"
     },
   ];
 
@@ -452,7 +745,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // 3. Mouse Parallax Effect ONLY for Hero Text (NOT image)
+  // 3. Mouse Parallax Effect ONLY for Hero Text
   useEffect(() => {
     const section = heroSectionRef.current;
     if (!section) return;
@@ -488,7 +781,6 @@ export default function App() {
   // 5. GSAP Scroll Animations & Character Floating Animation
   useGSAP(() => {
     if (!loading) {
-      // Mikey Ambient Smooth Up-and-Down Floating (NO MOUSE CONFLICITING ACCELERATION)
       gsap.to(characterRef.current, {
         y: -14, duration: 2.2, repeat: -1, yoyo: true, ease: "power1.inOut"
       });
@@ -534,8 +826,16 @@ export default function App() {
     <div ref={containerRef} className="relative w-full bg-black text-white overflow-hidden font-sans select-none cursor-none">
       <CustomCursor />
 
+      {/* HACKER COMMAND PALETTE (CTRL + K) */}
+      <CommandPalette
+        isOpen={cmdOpen}
+        onClose={() => setCmdOpen(false)}
+        scrollTo={scrollToSection}
+        lenisRef={lenisInstanceRef}
+      />
+
       {/* FIXED TOP NAVBAR */}
-      <Navbar lenisRef={lenisInstanceRef} />
+      <Navbar lenisRef={lenisInstanceRef} onOpenCmd={() => setCmdOpen(true)} />
 
       {/* PRELOADER */}
       <div ref={preloaderRef} className="fixed inset-0 z-50 flex items-center justify-center bg-black overflow-hidden cursor-none">
@@ -553,6 +853,9 @@ export default function App() {
         <div className="absolute -top-32 left-1/4 w-[600px] h-[600px] bg-red-900/30 rounded-full blur-[160px] pointer-events-none" />
         <div className="absolute bottom-10 -right-20 w-[450px] h-[450px] bg-red-600/20 rounded-full blur-[140px] pointer-events-none" />
 
+        {/* CRIMSON CYBER PARTICLES BACKGROUND CANVAS */}
+        <ParticleCanvas />
+
         {/* Kanji Streetwear Vertical Badges */}
         <div className="absolute left-6 md:left-12 top-1/3 z-10 hidden md:flex flex-col items-center gap-3 pointer-events-none">
           <span className="font-mono text-[10px] text-red-600 tracking-widest uppercase writing-vertical border-l border-red-900/40 pl-2">
@@ -566,7 +869,7 @@ export default function App() {
         </div>
 
         {/* UNIFIED HERO TYPOGRAPHY: "KSHITIJ" */}
-        <div ref={heroTextRef} className="absolute z-10 inset-x-0 flex flex-col items-center justify-center pointer-events-none text-center -translate-y-90">
+        <div ref={heroTextRef} className="absolute z-10 inset-x-0 flex flex-col items-center justify-center pointer-events-none text-center -translate-y-24">
           <span className="text-xs md:text-sm font-mono text-red-500 tracking-[0.3em] uppercase mb-1">
             // FULL STACK ARCHITECT
           </span>
@@ -580,7 +883,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Mikey Character Image in Center (Floating animation only, no mouse jitter) */}
+        {/* Mikey Character Image in Center */}
         <img
           ref={characterRef}
           src="/mikey-character.png"
@@ -732,16 +1035,30 @@ export default function App() {
               ))}
             </div>
 
-            <button
-              onClick={() => {
-                soundFx.playClick();
-                setSelectedProject(null);
-              }}
-              className="w-full py-4 bg-red-600 hover:bg-red-700 font-mono text-xs font-bold tracking-widest text-white uppercase rounded-xl transition-colors shadow-[0_0_20px_rgba(220,38,38,0.4)] cursor-none"
-              onMouseEnter={() => soundFx.playHover()}
-            >
-              ACKNOWLEDGE & RETURN TO GALLERY
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              {selectedProject.github && (
+                <a
+                  href={selectedProject.github}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex-1 py-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 font-mono text-xs font-bold tracking-widest text-center text-white uppercase rounded-xl transition-colors cursor-none"
+                  onMouseEnter={() => soundFx.playHover()}
+                  onClick={() => soundFx.playClick()}
+                >
+                  [ VIEW ON GITHUB ↗ ]
+                </a>
+              )}
+              <button
+                onClick={() => {
+                  soundFx.playClick();
+                  setSelectedProject(null);
+                }}
+                className="flex-1 py-4 bg-red-600 hover:bg-red-700 font-mono text-xs font-bold tracking-widest text-white uppercase rounded-xl transition-colors shadow-[0_0_20px_rgba(220,38,38,0.4)] cursor-none"
+                onMouseEnter={() => soundFx.playHover()}
+              >
+                RETURN TO GALLERY
+              </button>
+            </div>
           </div>
         </div>
       )}
