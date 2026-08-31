@@ -63,6 +63,8 @@ const ParticleCanvas = () => {
       });
     }
 
+    const repelDistSq = PARTICLE_CONFIG.mouseRepelDistance * PARTICLE_CONFIG.mouseRepelDistance;
+
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
@@ -72,14 +74,15 @@ const ParticleCanvas = () => {
         p.x += p.vx;
         p.y += p.vy;
 
-        // Mouse repulsion effect
+        // Fast squared distance mouse repulsion
         const dx = p.x - mouseX;
         const dy = p.y - mouseY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < PARTICLE_CONFIG.mouseRepelDistance) {
+        const distSq = dx * dx + dy * dy;
+        if (distSq < repelDistSq) {
+          const dist = Math.sqrt(distSq) || 1;
           const force = (PARTICLE_CONFIG.mouseRepelDistance - dist) / PARTICLE_CONFIG.mouseRepelDistance;
-          p.x += (dx / dist) * force * 3.5;
-          p.y += (dy / dist) * force * 3.5;
+          p.x += (dx / dist) * force * 3;
+          p.y += (dy / dist) * force * 3;
         }
 
         // Screen boundary wrapping
@@ -90,12 +93,15 @@ const ParticleCanvas = () => {
         if (p.x < -10) p.x = width + 10;
         if (p.x > width + 10) p.x = -10;
 
-        // Draw particle ember
+        // Draw particle ember (Fast GPU-friendly dual-pass)
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius * 1.8, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(220, 38, 38, ${p.alpha * 0.25})`;
+        ctx.fill();
+
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `${PARTICLE_CONFIG.color} ${p.alpha})`;
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = 'rgba(239, 68, 68, 0.8)';
+        ctx.fillStyle = `rgba(255, 100, 100, ${p.alpha})`;
         ctx.fill();
       }
 
@@ -114,7 +120,7 @@ const ParticleCanvas = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full pointer-events-none z-10"
+      className="absolute inset-0 w-full h-full pointer-events-none z-0"
     />
   );
 };
@@ -163,10 +169,13 @@ const CustomCursor = () => {
     const glow = glowRef.current;
     if (!cursor || !glow) return;
 
-    const xMove = gsap.quickTo(cursor, "x", { duration: 0.05, ease: "power4.out" });
-    const yMove = gsap.quickTo(cursor, "y", { duration: 0.05, ease: "power4.out" });
-    const xGlow = gsap.quickTo(glow, "x", { duration: 0.8, ease: "power3.out" });
-    const yGlow = gsap.quickTo(glow, "y", { duration: 0.8, ease: "power3.out" });
+    gsap.set(cursor, { xPercent: -50, yPercent: -50 });
+    gsap.set(glow, { xPercent: -50, yPercent: -50 });
+
+    const xMove = gsap.quickTo(cursor, "x", { duration: 0.015, ease: "none" });
+    const yMove = gsap.quickTo(cursor, "y", { duration: 0.015, ease: "none" });
+    const xGlow = gsap.quickTo(glow, "x", { duration: 0.15, ease: "power2.out" });
+    const yGlow = gsap.quickTo(glow, "y", { duration: 0.15, ease: "power2.out" });
 
     const moveCursor = (e) => {
       xMove(e.clientX);
@@ -178,7 +187,7 @@ const CustomCursor = () => {
     const handleHover = (e) => setHoverText(e.detail);
     const handleLeave = () => setHoverText("");
 
-    window.addEventListener("mousemove", moveCursor);
+    window.addEventListener("mousemove", moveCursor, { passive: true });
     window.addEventListener("cursorHover", handleHover);
     window.addEventListener("cursorLeave", handleLeave);
 
@@ -193,14 +202,15 @@ const CustomCursor = () => {
     <>
       <div
         ref={glowRef}
-        className="fixed top-0 left-0 w-[120px] h-[120px] bg-red-600/30 rounded-full blur-[40px] pointer-events-none z-[99] transform -translate-x-1/2 -translate-y-1/2 mix-blend-screen"
+        className="fixed top-0 left-0 w-[120px] h-[120px] rounded-full pointer-events-none z-[9998] will-change-transform"
+        style={{ background: 'radial-gradient(circle, rgba(220, 38, 38, 0.35) 0%, transparent 70%)' }}
       />
       <div
         ref={cursorRef}
-        className={`fixed top-0 left-0 border-[1.5px] border-red-600 rounded-full pointer-events-none z-[100] transform -translate-x-1/2 -translate-y-1/2 shadow-[0_0_10px_rgba(220,38,38,0.8)] flex items-center justify-center transition-all duration-300 ease-out ${hoverText ? 'w-16 h-16 bg-red-600/10 backdrop-blur-sm' : 'w-8 h-8'
+        className={`fixed top-0 left-0 border-[1.5px] border-red-600 rounded-full pointer-events-none z-[9999] shadow-[0_0_10px_rgba(220,38,38,0.8)] flex items-center justify-center will-change-transform transition-[width,height,background-color,border-color] duration-150 ease-out ${hoverText ? 'w-16 h-16 bg-red-600/10 backdrop-blur-sm' : 'w-8 h-8'
           }`}
       >
-        <span className={`text-[10px] font-mono tracking-widest text-white transition-opacity duration-300 ${hoverText ? 'opacity-100' : 'opacity-0'}`}>
+        <span className={`text-[10px] font-mono tracking-widest text-white transition-opacity duration-150 ${hoverText ? 'opacity-100' : 'opacity-0'}`}>
           {hoverText}
         </span>
       </div>
@@ -225,9 +235,8 @@ const CommandPalette = ({ isOpen, onClose, scrollTo, lenisRef }) => {
 
   const commands = [
     { id: 'projects', label: 'Go to Featured Projects', category: 'NAVIGATION', action: () => scrollTo('projects') },
-    { id: 'showreel', label: 'Launch Cinematic Showreel', category: 'NAVIGATION', action: () => scrollTo('showreel') },
     { id: 'about', label: 'The Architect (Bio & Skills)', category: 'NAVIGATION', action: () => scrollTo('about') },
-    { id: 'contact', label: 'Initiate Contact Protocol', category: 'NAVIGATION', action: () => scrollTo('contact') },
+    { id: 'contact', label: 'Initiate Contact Protocol', category: 'NAVIGATION', action: () => scrollTo('contact-section') },
     { id: 'github', label: 'Open GitHub Profile', category: 'EXTERNAL', action: () => window.open('https://github.com/kshitijshinde22-hue', '_blank') },
     { id: 'clinic', label: 'Open Healthcare ERP Repo', category: 'PROJECT', action: () => window.open('https://github.com/kshitijshinde22-hue/dr-pakhare-clinic', '_blank') },
     { id: 'linkedin', label: 'Connect on LinkedIn', category: 'EXTERNAL', action: () => window.open('https://www.linkedin.com/in/kshitij-shinde-3b02622b5', '_blank') },
@@ -322,7 +331,7 @@ const Navbar = ({ lenisRef, onOpenCmd }) => {
     <header className="fixed top-0 inset-x-0 z-40 glass-nav px-6 py-4 flex items-center justify-between transition-all duration-300">
       {/* Brand Logo */}
       <div
-        className="flex items-center gap-2 cursor-none"
+        className="flex items-center gap-3 cursor-none"
         onMouseEnter={() => {
           soundFx.playHover();
           window.dispatchEvent(new CustomEvent("cursorHover", { detail: "TŌMAN" }));
@@ -330,24 +339,13 @@ const Navbar = ({ lenisRef, onOpenCmd }) => {
         onMouseLeave={() => window.dispatchEvent(new CustomEvent("cursorLeave"))}
       >
         <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shadow-[0_0_8px_rgba(220,38,38,0.8)]" />
-        <span className="font-mono text-sm tracking-wider uppercase text-white font-bold">
-          KSHITIJ <span className="text-red-600">//</span> TOKYO MANJI
+        <span className="font-sans text-sm tracking-[0.2em] uppercase text-white font-black">
+          KSHITIJ <span className="text-red-600 font-light opacity-50 px-1">|</span> TOKYO MANJI
         </span>
       </div>
 
       {/* Nav Anchors */}
-      <nav className="hidden md:flex items-center gap-8 font-mono text-xs tracking-widest text-zinc-400 uppercase">
-        <button
-          onClick={() => scrollTo('showreel')}
-          onMouseEnter={() => {
-            soundFx.playHover();
-            window.dispatchEvent(new CustomEvent("cursorHover", { detail: "NAV" }));
-          }}
-          onMouseLeave={() => window.dispatchEvent(new CustomEvent("cursorLeave"))}
-          className="hover:text-white transition-colors cursor-none"
-        >
-          // SHOWREEL
-        </button>
+      <nav className="hidden md:flex items-center gap-10 font-sans text-[11px] tracking-[0.15em] text-zinc-400 uppercase font-medium">
         <button
           onClick={() => scrollTo('projects')}
           onMouseEnter={() => {
@@ -355,9 +353,10 @@ const Navbar = ({ lenisRef, onOpenCmd }) => {
             window.dispatchEvent(new CustomEvent("cursorHover", { detail: "NAV" }));
           }}
           onMouseLeave={() => window.dispatchEvent(new CustomEvent("cursorLeave"))}
-          className="hover:text-white transition-colors cursor-none"
+          className="hover:text-white transition-colors cursor-none relative group py-1"
         >
-          // WORKS
+          FEATURED WORKS
+          <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-red-600 transition-all duration-300 group-hover:w-full"></span>
         </button>
         <button
           onClick={() => scrollTo('about')}
@@ -366,9 +365,22 @@ const Navbar = ({ lenisRef, onOpenCmd }) => {
             window.dispatchEvent(new CustomEvent("cursorHover", { detail: "NAV" }));
           }}
           onMouseLeave={() => window.dispatchEvent(new CustomEvent("cursorLeave"))}
-          className="hover:text-white transition-colors cursor-none"
+          className="hover:text-white transition-colors cursor-none relative group py-1"
         >
-          // ARCHITECT
+          THE ARCHITECT
+          <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-red-600 transition-all duration-300 group-hover:w-full"></span>
+        </button>
+        <button
+          onClick={() => scrollTo('contact-section')}
+          onMouseEnter={() => {
+            soundFx.playHover();
+            window.dispatchEvent(new CustomEvent("cursorHover", { detail: "NAV" }));
+          }}
+          onMouseLeave={() => window.dispatchEvent(new CustomEvent("cursorLeave"))}
+          className="hover:text-white transition-colors cursor-none relative group py-1"
+        >
+          TRANSMIT MSG
+          <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-red-600 transition-all duration-300 group-hover:w-full"></span>
         </button>
       </nav>
 
@@ -447,7 +459,8 @@ const TiltCard = ({ item, onSelect }) => {
       rotateY,
       transformPerspective: 1000,
       ease: "power2.out",
-      duration: 0.4
+      duration: 0.3,
+      overwrite: "auto"
     });
 
     gsap.to(glowRef.current, {
@@ -455,7 +468,8 @@ const TiltCard = ({ item, onSelect }) => {
       y: y - 100,
       opacity: 1,
       ease: "power2.out",
-      duration: 0.4
+      duration: 0.3,
+      overwrite: "auto"
     });
   };
 
@@ -464,12 +478,14 @@ const TiltCard = ({ item, onSelect }) => {
       rotateX: 0,
       rotateY: 0,
       ease: "power3.out",
-      duration: 0.7
+      duration: 0.5,
+      overwrite: "auto"
     });
     gsap.to(glowRef.current, {
       opacity: 0,
       ease: "power3.out",
-      duration: 0.7
+      duration: 0.5,
+      overwrite: "auto"
     });
   };
 
@@ -585,21 +601,25 @@ const Footer = () => {
 
         <div className="flex flex-wrap gap-8 md:gap-16 mt-20 border-t border-zinc-900 pt-10 w-full justify-center">
           {links.map((link) => (
-            <a
+            <button
               key={link.label}
-              href={link.url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-zinc-400 hover:text-white font-mono text-sm tracking-widest uppercase transition-colors cursor-none"
+              className="text-zinc-400 hover:text-white font-mono text-sm tracking-widest uppercase transition-colors cursor-none bg-transparent border-none p-0"
               onMouseEnter={() => {
                 soundFx.playHover();
                 window.dispatchEvent(new CustomEvent("cursorHover", { detail: "LINK" }));
               }}
               onMouseLeave={() => window.dispatchEvent(new CustomEvent("cursorLeave"))}
-              onClick={() => soundFx.playClick()}
+              onClick={() => {
+                soundFx.playClick();
+                if (link.url.startsWith('mailto:')) {
+                  window.location.href = link.url;
+                } else {
+                  window.open(link.url, '_blank', 'noopener,noreferrer');
+                }
+              }}
             >
               {link.label}
-            </a>
+            </button>
           ))}
         </div>
       </div>
@@ -614,7 +634,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [wordIndex, setWordIndex] = useState(0);
   const [selectedProject, setSelectedProject] = useState(null);
-  const [showreelModal, setShowreelModal] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
 
   const containerRef = useRef(null);
@@ -636,7 +655,6 @@ export default function App() {
       if (e.key === 'Escape') {
         setCmdOpen(false);
         setSelectedProject(null);
-        setShowreelModal(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -715,22 +733,30 @@ export default function App() {
     { name: 'GSAP & Motion UI', level: 86 }
   ];
 
-  // 1. Initialize Lenis Smooth Scroll
+  // 1. Initialize Lenis Smooth Scroll (Synced to GSAP Ticker for zero stutter)
   useEffect(() => {
     const lenis = new Lenis({
-      duration: 1.2,
+      duration: 1.0,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
+      wheelMultiplier: 1.0,
+      touchMultiplier: 1.5,
     });
     lenisInstanceRef.current = lenis;
 
-    function raf(time) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
+    // Direct synchronization between Lenis and ScrollTrigger
+    lenis.on('scroll', ScrollTrigger.update);
 
-    return () => lenis.destroy();
+    const updateTicker = (time) => {
+      lenis.raf(time * 1000);
+    };
+    gsap.ticker.add(updateTicker);
+    gsap.ticker.lagSmoothing(0);
+
+    return () => {
+      gsap.ticker.remove(updateTicker);
+      lenis.destroy();
+    };
   }, []);
 
   // 2. Preloader Text Cycling
@@ -743,25 +769,6 @@ export default function App() {
       });
     }, 120);
     return () => clearInterval(interval);
-  }, []);
-
-  // 3. Mouse Parallax Effect ONLY for Hero Text
-  useEffect(() => {
-    const section = heroSectionRef.current;
-    if (!section) return;
-
-    const handleMouseMove = (e) => {
-      const { innerWidth, innerHeight } = window;
-      const x = (e.clientX / innerWidth - 0.5) * 30;
-      const y = (e.clientY / innerHeight - 0.5) * 20;
-
-      if (heroTextRef.current) {
-        gsap.to(heroTextRef.current, { x: -x, y: -y, ease: "power2.out", duration: 0.6 });
-      }
-    };
-
-    section.addEventListener("mousemove", handleMouseMove);
-    return () => section.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
   // 4. GSAP Master Preloader & Entrance Animations
@@ -782,14 +789,8 @@ export default function App() {
   useGSAP(() => {
     if (!loading) {
       gsap.to(characterRef.current, {
-        y: -14, duration: 2.2, repeat: -1, yoyo: true, ease: "power1.inOut"
+        y: -10, duration: 2.5, repeat: -1, yoyo: true, ease: "sine.inOut"
       });
-
-      gsap.fromTo(
-        ".video-container",
-        { scale: 0.6, opacity: 0, y: 100 },
-        { scale: 1, opacity: 1, y: 0, ease: "power3.out", scrollTrigger: { trigger: ".showreel-section", start: "top 80%", end: "top 20%", scrub: 1 } }
-      );
 
       if (horizontalSectionRef.current && horizontalTrackRef.current) {
         const track = horizontalTrackRef.current;
@@ -839,7 +840,10 @@ export default function App() {
 
       {/* PRELOADER */}
       <div ref={preloaderRef} className="fixed inset-0 z-50 flex items-center justify-center bg-black overflow-hidden cursor-none">
-        <div className="absolute w-[400px] h-[400px] bg-red-700/30 rounded-full blur-[120px] pointer-events-none animate-pulse" />
+        <div
+          className="absolute w-[400px] h-[400px] rounded-full pointer-events-none animate-pulse"
+          style={{ background: 'radial-gradient(circle, rgba(185,28,28,0.25) 0%, transparent 70%)' }}
+        />
         <h1 className="relative z-10 text-4xl md:text-6xl font-normal tracking-widest uppercase text-zinc-200 drop-shadow-[0_0_15px_rgba(228,228,231,0.2)]">
           {words[wordIndex]}
         </h1>
@@ -849,9 +853,15 @@ export default function App() {
       {/* SCENE 1: REFINED HERO SECTION             */}
       {/* ========================================= */}
       <section ref={heroSectionRef} className="relative w-full h-screen flex items-center justify-center bg-black overflow-hidden pt-16">
-        {/* Ambient Volumetric Red Light Blurs */}
-        <div className="absolute -top-32 left-1/4 w-[600px] h-[600px] bg-red-900/30 rounded-full blur-[160px] pointer-events-none" />
-        <div className="absolute bottom-10 -right-20 w-[450px] h-[450px] bg-red-600/20 rounded-full blur-[140px] pointer-events-none" />
+        {/* Ambient Volumetric Red Light Gradients (Fast GPU 0% overhead) */}
+        <div
+          className="absolute -top-32 left-1/4 w-[600px] h-[600px] rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(185,28,28,0.2) 0%, transparent 70%)' }}
+        />
+        <div
+          className="absolute bottom-10 -right-20 w-[450px] h-[450px] rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(220,38,38,0.18) 0%, transparent 70%)' }}
+        />
 
         {/* CRIMSON CYBER PARTICLES BACKGROUND CANVAS */}
         <ParticleCanvas />
@@ -868,16 +878,14 @@ export default function App() {
           </span>
         </div>
 
-        {/* UNIFIED HERO TYPOGRAPHY: "KSHITIJ" */}
-        <div ref={heroTextRef} className="absolute z-10 inset-x-0 flex flex-col items-center justify-center pointer-events-none text-center -translate-y-24">
-          <span className="text-xs md:text-sm font-mono text-red-500 tracking-[0.3em] uppercase mb-1">
-            // FULL STACK ARCHITECT
-          </span>
-          <div className="relative origin-center" style={{ transform: 'scaleY(1.5)' }}>
-            <h1 className="text-[17vw] md:text-[18vw] lg:text-[18vw] font-black tracking-[0.1em] uppercase leading-none hero-fill-text">
+        {/* UNIFIED HERO TYPOGRAPHY: CLEAN BATTLE DISPLAY */}
+        <div ref={heroTextRef} className="absolute z-10 inset-x-0 flex flex-col items-center justify-center pointer-events-none text-center -translate-y-24 will-change-transform">
+          {/* Main Display Title with Forward Action Italic Skew & Increased Height/Width */}
+          <div className="relative origin-center transform -skew-x-12 scale-y-125 scale-x-105 my-3">
+            <h1 className="text-[15vw] md:text-[16vw] lg:text-[17vw] font-black tracking-[0.14em] md:tracking-[0.16em] uppercase leading-none manga-battle-title select-none pl-[0.14em] md:pl-[0.16em]">
               KSHITIJ
             </h1>
-            <h1 className="absolute top-2 left-0 right-0 text-[17vw] md:text-[18vw] lg:text-[18vw] font-black tracking-[0.1em] uppercase leading-none hero-stroke-text opacity-35">
+            <h1 className="absolute inset-0 text-[15vw] md:text-[16vw] lg:text-[17vw] font-black tracking-[0.14em] md:tracking-[0.16em] uppercase leading-none manga-stroke-shadow opacity-50 select-none pl-[0.14em] md:pl-[0.16em] pointer-events-none mix-blend-screen">
               KSHITIJ
             </h1>
           </div>
@@ -888,55 +896,29 @@ export default function App() {
           ref={characterRef}
           src="/mikey-character.png"
           alt="Mikey"
-          className="absolute bottom-0 z-20 h-[78vh] md:h-[90vh] object-contain drop-shadow-[0_25px_60px_rgba(0,0,0,0.95)]"
+          className="absolute bottom-0 z-20 h-[78vh] md:h-[90vh] object-contain will-change-transform drop-shadow-2xl"
         />
+
+        {/* Corner HUD Telemetry Badges (Unobstructed by character) */}
+        <div className="absolute bottom-10 left-6 md:left-12 z-30 hidden sm:flex items-center gap-3 font-mono text-[10px] tracking-[0.25em] text-zinc-400 bg-zinc-950/80 border border-zinc-800/80 px-4 py-2 rounded-full backdrop-blur-md">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+          <span className="text-white font-bold">FULL STACK ARCHITECT</span>
+          <span className="text-zinc-600">//</span>
+          <span className="text-red-500">JAVA & MERN</span>
+        </div>
+
+        <div className="absolute bottom-10 right-6 md:right-12 z-30 hidden sm:flex items-center gap-3 font-mono text-[10px] tracking-[0.25em] text-zinc-400 bg-zinc-950/80 border border-zinc-800/80 px-4 py-2 rounded-full backdrop-blur-md">
+          <span className="text-red-500">卍</span>
+          <span className="text-white font-bold">TOKYO MANJI CREW</span>
+          <span className="text-zinc-600">//</span>
+          <span>EST. 2026</span>
+        </div>
 
         {/* Bottom Ambient Vignette Fade */}
         <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-black via-black/80 to-transparent z-30 pointer-events-none" />
       </section>
 
-      {/* SCENE 2: SHOWREEL SECTION */}
-      <section id="showreel" className="showreel-section relative w-full min-h-screen bg-black flex flex-col items-center justify-center py-32 z-40 border-t border-red-900/30 px-6">
-        <div className="container mx-auto max-w-6xl text-center">
-          <p className="text-red-600 font-mono tracking-widest uppercase mb-3">// CINEMATIC TRANSITION</p>
-          <h2 className="text-3xl md:text-5xl font-bold mb-12 text-white/90 uppercase tracking-wide">
-            Proof that I do more <br /> <span className="text-red-600">than just code.</span>
-          </h2>
-
-          <div
-            className="video-container relative w-full aspect-video bg-zinc-950 rounded-3xl border border-zinc-800 shadow-[0_0_60px_rgba(220,38,38,0.15)] flex flex-col items-center justify-center overflow-hidden cursor-none group neon-border-pulse"
-            onMouseEnter={() => {
-              soundFx.playHover();
-              window.dispatchEvent(new CustomEvent("cursorHover", { detail: "PLAY" }));
-            }}
-            onMouseLeave={() => window.dispatchEvent(new CustomEvent("cursorLeave"))}
-            onClick={() => {
-              soundFx.playClick();
-              setShowreelModal(true);
-            }}
-          >
-            <div className="absolute inset-0 scanlines-overlay pointer-events-none z-10" />
-
-            <div className="relative z-20 flex flex-col items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-red-600/20 border border-red-500/80 flex items-center justify-center backdrop-blur-md group-hover:scale-110 transition-transform duration-300 shadow-[0_0_20px_rgba(220,38,38,0.6)]">
-                <span className="text-red-500 text-2xl ml-1">▶</span>
-              </div>
-              <span className="text-zinc-300 font-mono tracking-widest text-xs uppercase bg-black/60 px-4 py-1.5 rounded-full border border-zinc-800">
-                [ LAUNCH SHOWREEL DEMO ]
-              </span>
-            </div>
-
-            <div className="absolute bottom-4 left-6 z-20 font-mono text-[10px] text-zinc-500 tracking-wider">
-              // REEL_STATUS: READY
-            </div>
-            <div className="absolute bottom-4 right-6 z-20 font-mono text-[10px] text-zinc-500 tracking-wider">
-              // QUALITY: 4K HIGH RES
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SCENE 3: PINNED HORIZONTAL GALLERY */}
+      {/* SCENE 2: PINNED HORIZONTAL GALLERY */}
       <section ref={horizontalSectionRef} id="projects" className="projects-section relative w-full h-screen bg-black z-40 border-t border-zinc-900 overflow-hidden flex flex-col justify-center">
         <div className="container mx-auto px-6 max-w-6xl mb-8 shrink-0">
           <p className="text-red-600 font-mono tracking-widest uppercase mb-2">// SELECTED WORKS (PINNED SCROLL)</p>
@@ -1037,16 +1019,16 @@ export default function App() {
 
             <div className="flex flex-col sm:flex-row gap-3">
               {selectedProject.github && (
-                <a
-                  href={selectedProject.github}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  onClick={() => {
+                    soundFx.playClick();
+                    window.open(selectedProject.github, '_blank', 'noopener,noreferrer');
+                  }}
                   className="flex-1 py-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 font-mono text-xs font-bold tracking-widest text-center text-white uppercase rounded-xl transition-colors cursor-none"
                   onMouseEnter={() => soundFx.playHover()}
-                  onClick={() => soundFx.playClick()}
                 >
                   [ VIEW ON GITHUB ↗ ]
-                </a>
+                </button>
               )}
               <button
                 onClick={() => {
@@ -1062,37 +1044,7 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {/* SHOWREEL MODAL OVERLAY */}
-      {showreelModal && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/90 backdrop-blur-2xl">
-          <div className="relative w-full max-w-4xl bg-zinc-950 border border-red-600/50 rounded-3xl p-6 shadow-[0_0_60px_rgba(220,38,38,0.3)]">
-            <button
-              onClick={() => {
-                soundFx.playClick();
-                setShowreelModal(false);
-              }}
-              className="absolute top-6 right-6 text-zinc-400 hover:text-white font-mono text-sm border border-zinc-800 px-3 py-1 rounded-full cursor-none z-30"
-              onMouseEnter={() => soundFx.playHover()}
-            >
-              [ CLOSE DEMO ]
-            </button>
-
-            <div className="w-full aspect-video bg-black rounded-2xl border border-zinc-800 flex flex-col items-center justify-center overflow-hidden relative">
-              <div className="absolute inset-0 scanlines-overlay pointer-events-none z-10" />
-              <div className="text-center p-8 z-20">
-                <span className="text-red-500 font-mono text-sm tracking-widest uppercase block mb-3 animate-pulse">
-                  // CINEMATIC STREAM ONLINE
-                </span>
-                <h3 className="text-2xl font-bold text-white mb-2">KSHITIJ PORTFOLIO REEL 2026</h3>
-                <p className="text-zinc-400 font-mono text-xs max-w-md mx-auto">
-                  Demonstrating full-stack engineering, Core Java logic processing, MERN web applications, and dynamic GSAP motion choreography.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
+
