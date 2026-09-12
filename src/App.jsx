@@ -236,7 +236,7 @@ const CommandPalette = ({ isOpen, onClose, scrollTo }) => {
   const commands = [
     { id: 'projects', label: 'Go to Featured Projects', category: 'NAVIGATION', action: () => scrollTo('projects') },
     { id: 'about', label: 'The Architect (Bio & Skills)', category: 'NAVIGATION', action: () => scrollTo('about') },
-    { id: 'contact', label: 'Initiate Contact Protocol', category: 'NAVIGATION', action: () => scrollTo('contact-section') },
+    { id: 'contact', label: 'Initiate Contact Protocol', category: 'NAVIGATION', action: () => scrollTo('contact') },
     { id: 'github', label: 'Open GitHub Profile', category: 'EXTERNAL', action: () => window.open('https://github.com/kshitijshinde22-hue', '_blank') },
     { id: 'clinic', label: 'Open Healthcare ERP Repo', category: 'PROJECT', action: () => window.open('https://github.com/kshitijshinde22-hue/dr-pakhare-clinic', '_blank') },
     { id: 'linkedin', label: 'Connect on LinkedIn', category: 'EXTERNAL', action: () => window.open('https://www.linkedin.com/in/kshitij-shinde-3b02622b5', '_blank') },
@@ -380,7 +380,7 @@ const Navbar = ({ lenisRef, onOpenCmd }) => {
           <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-red-600 transition-all duration-300 group-hover:w-full"></span>
         </button>
         <button
-          onClick={() => scrollTo('contact-section')}
+          onClick={() => scrollTo('contact')}
           onMouseEnter={() => {
             soundFx.playHover();
             window.dispatchEvent(new CustomEvent("cursorHover", { detail: "NAV" }));
