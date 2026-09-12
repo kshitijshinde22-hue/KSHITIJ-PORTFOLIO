@@ -81,3 +81,33 @@
 .eq-bar-3 { animation: eqBounce 0.9s infinite 0.3s ease-in-out; }
 .eq-bar-4 { animation: eqBounce 0.7s infinite 0.1s ease-in-out; }
 
+/* Holographic Cyber Laser Scanner */
+@keyframes cyberScan {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.85;
+  }
+  85% {
+    opacity: 0.85;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+.animate-cyberScan {
+  animation: cyberScan 3.5s infinite ease-in-out;
+}
+
+/* Hero Character Cinematic Cyberpunk Color Grade & Shading */
+.hero-character-graded {
+  filter: contrast(1.18) brightness(0.88) saturate(1.08) drop-shadow(0 0 35px rgba(220, 38, 38, 0.25)) drop-shadow(0 25px 50px rgba(0, 0, 0, 0.95));
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 84%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 84%, rgba(0, 0, 0, 0) 100%);
+}
+
+

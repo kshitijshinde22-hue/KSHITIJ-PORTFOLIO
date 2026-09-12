@@ -221,7 +221,7 @@ const CustomCursor = () => {
 // ==========================================
 // HACKER COMMAND PALETTE (Ctrl + K)
 // ==========================================
-const CommandPalette = ({ isOpen, onClose, scrollTo, lenisRef }) => {
+const CommandPalette = ({ isOpen, onClose, scrollTo }) => {
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
 
@@ -240,7 +240,7 @@ const CommandPalette = ({ isOpen, onClose, scrollTo, lenisRef }) => {
     { id: 'github', label: 'Open GitHub Profile', category: 'EXTERNAL', action: () => window.open('https://github.com/kshitijshinde22-hue', '_blank') },
     { id: 'clinic', label: 'Open Healthcare ERP Repo', category: 'PROJECT', action: () => window.open('https://github.com/kshitijshinde22-hue/dr-pakhare-clinic', '_blank') },
     { id: 'linkedin', label: 'Connect on LinkedIn', category: 'EXTERNAL', action: () => window.open('https://www.linkedin.com/in/kshitij-shinde-3b02622b5', '_blank') },
-    { id: 'email', label: 'Send Email Directly', category: 'CONTACT', action: () => window.location.href = 'mailto:kshitijshinde12321@gmail.com' },
+    { id: 'email', label: 'Send Email Directly', category: 'CONTACT', action: () => window.location.assign('mailto:kshitijshinde12321@gmail.com') },
     { id: 'sound', label: 'Toggle Synthetic Audio FX', category: 'SYSTEM', action: () => soundFx.toggleSound() },
     { id: 'toman', label: 'Tokyo Manji Easter Egg // 無敵', category: 'SECRET', action: () => alert('🔥 TOKYO MANJI GANG - EST. 2026 // KSHITIJ SHINDE') },
   ];
@@ -309,6 +309,15 @@ const CommandPalette = ({ isOpen, onClose, scrollTo, lenisRef }) => {
 // ==========================================
 const Navbar = ({ lenisRef, onOpenCmd }) => {
   const [audioActive, setAudioActive] = useState(false);
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (audioActive && audioRef.current) {
+      audioRef.current.play().catch(() => setAudioActive(false));
+    } else if (!audioActive && audioRef.current) {
+      audioRef.current.pause();
+    }
+  }, [audioActive]);
 
   const handleAudioToggle = () => {
     const newState = soundFx.toggleSound();
@@ -430,6 +439,7 @@ const Navbar = ({ lenisRef, onOpenCmd }) => {
           <span>AUDIO: {audioActive ? 'ON' : 'MUTED'}</span>
         </button>
       </div>
+      <audio ref={audioRef} src="/bgm.mp3" loop />
     </header>
   );
 };
@@ -628,10 +638,12 @@ const Footer = () => {
 };
 
 // ==========================================
-// FINAL HYBRID: DUAL-AXIS STREETWEAR SPLIT + KINETIC BACKGROUND RIBBON
+// THE ARCHITECT PROFILE SECTION (PHOTO + INTERACTIVE FULL STACK MANIFESTO)
 // ==========================================
-const StreetwearKineticManifesto = () => {
+const ArchitectProfileSection = () => {
   const sectionRef = useRef(null);
+  const photoCardRef = useRef(null);
+  const photoGlowRef = useRef(null);
 
   useGSAP(() => {
     // Single continuous kinetic marquee track (infinite loop)
@@ -641,13 +653,165 @@ const StreetwearKineticManifesto = () => {
       duration: 25,
       ease: "linear",
     });
+
+    // Left Photo 3D Entrance ScrollTrigger
+    gsap.fromTo(
+      ".profile-photo-container",
+      { x: -70, opacity: 0, scale: 0.94, rotateY: 15 },
+      {
+        x: 0,
+        opacity: 1,
+        scale: 1,
+        rotateY: 0,
+        ease: "power2.out",
+        scrollTrigger: {
+          trigger: ".mini-about-section",
+          start: "top 75%",
+          end: "top 35%",
+          scrub: 0.6,
+        },
+      }
+    );
+
+    // Right Content Progressive Stagger ScrollTrigger
+    gsap.fromTo(
+      ".profile-content-stagger",
+      { y: 60, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        stagger: 0.12,
+        ease: "power2.out",
+        scrollTrigger: {
+          trigger: ".profile-right-content",
+          start: "top 80%",
+          end: "top 45%",
+          scrub: 0.5,
+        },
+      }
+    );
+
+    // Interactive Tech Nodes ScrollTrigger
+    gsap.fromTo(
+      ".tech-power-node",
+      { y: 40, opacity: 0, scale: 0.95 },
+      {
+        y: 0,
+        opacity: 1,
+        scale: 1,
+        stagger: 0.08,
+        ease: "power2.out",
+        scrollTrigger: {
+          trigger: ".tech-nodes-grid",
+          start: "top 85%",
+          end: "top 55%",
+          scrub: 0.5,
+        },
+      }
+    );
   }, { scope: sectionRef });
 
+  // Photo 3D Mouse Tilt Handlers
+  const handlePhotoMouseMove = (e) => {
+    const card = photoCardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = ((y - centerY) / centerY) * -10;
+    const rotateY = ((x - centerX) / centerX) * 10;
+
+    gsap.to(card, {
+      rotateX,
+      rotateY,
+      duration: 0.4,
+      ease: "power2.out",
+      transformPerspective: 1000,
+    });
+
+    if (photoGlowRef.current) {
+      gsap.to(photoGlowRef.current, {
+        x,
+        y,
+        opacity: 1,
+        duration: 0.3,
+      });
+    }
+  };
+
+  const handlePhotoMouseLeave = () => {
+    const card = photoCardRef.current;
+    if (!card) return;
+    gsap.to(card, {
+      rotateX: 0,
+      rotateY: 0,
+      duration: 0.6,
+      ease: "power2.out",
+    });
+    if (photoGlowRef.current) {
+      gsap.to(photoGlowRef.current, { opacity: 0, duration: 0.5 });
+    }
+  };
+
+  const techArsenal = [
+    {
+      id: "java",
+      name: "Core Java & Spring",
+      icon: "☕",
+      badge: "ENTERPRISE BACKEND",
+      desc: "High-concurrency multithreading, REST microservices, low-latency execution.",
+      border: "border-red-600/60",
+      tag: "95% Mastery",
+    },
+    {
+      id: "python",
+      name: "Python & Django",
+      icon: "🐍",
+      badge: "DATA & API ENGINES",
+      desc: "Robust backend services, dynamic AJAX engines, scalable SaaS architectures.",
+      border: "border-amber-500/60",
+      tag: "88% Mastery",
+    },
+    {
+      id: "react",
+      name: "React 19 & GSAP",
+      icon: "⚛️",
+      badge: "60FPS MOTION UI",
+      desc: "State-of-the-art interactive frontends, WebGL/Canvas, Lenis inertia scroll.",
+      border: "border-cyan-500/60",
+      tag: "92% Mastery",
+    },
+    {
+      id: "mysql",
+      name: "MySQL Relational DB",
+      icon: "🐬",
+      badge: "ACID TRANSACTIONS",
+      desc: "Row-level locking, complex indexing, bulletproof data consistency.",
+      border: "border-blue-500/60",
+      tag: "90% Mastery",
+    },
+    {
+      id: "postgres",
+      name: "PostgreSQL Engine",
+      icon: "🐘",
+      badge: "HIGH-VOLUME DATA",
+      desc: "JSONB document querying, relational integrity, enterprise schema modeling.",
+      border: "border-indigo-500/60",
+      tag: "86% Mastery",
+    },
+  ];
+
   return (
-    <section ref={sectionRef} id="manifesto" className="mini-about-section relative w-full bg-black py-32 px-6 border-t border-zinc-900 overflow-hidden z-30 min-h-screen flex flex-col justify-center">
-      {/* Volumetric Red Atmosphere Background */}
+    <section
+      ref={sectionRef}
+      id="manifesto"
+      className="mini-about-section relative w-full bg-black py-28 md:py-36 px-6 border-t border-zinc-900 overflow-hidden z-30 min-h-screen flex flex-col justify-center"
+    >
+      {/* Background Volumetric Ambient Lights */}
       <div
-        className="absolute top-1/4 left-10 w-[550px] h-[550px] rounded-full pointer-events-none"
+        className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(220,38,38,0.12) 0%, transparent 70%)' }}
       />
       <div
@@ -656,7 +820,7 @@ const StreetwearKineticManifesto = () => {
       />
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#18181b08_1px,transparent_1px),linear-gradient(to_bottom,#18181b08_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
 
-      {/* SINGLE BACKGROUND KINETIC MARQUEE LINE (Option 5 Feature) */}
+      {/* SINGLE BACKGROUND KINETIC MARQUEE LINE */}
       <div className="absolute top-1/2 -translate-y-1/2 inset-x-0 pointer-events-none opacity-15 overflow-hidden select-none -rotate-1 scale-105 z-0">
         <div className="w-full flex whitespace-nowrap overflow-hidden">
           <div className="marquee-single-track flex gap-12 items-center text-6xl md:text-8xl font-black uppercase text-red-600/70 tracking-wider">
@@ -664,10 +828,10 @@ const StreetwearKineticManifesto = () => {
               <div key={i} className="flex gap-12 items-center shrink-0">
                 <span>✦ 東京卍會 // TOKYO MANJI</span>
                 <span>✦ FULL STACK ARCHITECT</span>
-                <span>✦ CORE JAVA CONCURRENCY</span>
-                <span>✦ 60FPS MOTION UI</span>
-                <span>✦ VIT PUNE</span>
-                <span>✦ FIRST GEN // 2026</span>
+                <span>✦ JAVA & PYTHON CONCURRENCY</span>
+                <span>✦ REACT & 60FPS MOTION</span>
+                <span>✦ MYSQL & POSTGRESQL</span>
+                <span>✦ VIT PUNE // 2026</span>
               </div>
             ))}
           </div>
@@ -676,146 +840,226 @@ const StreetwearKineticManifesto = () => {
 
       <div className="container mx-auto max-w-6xl relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-          
-          {/* LEFT COLUMN: STREETWEAR KANJI SPINE (Sticky Identity Anchor) */}
-          <div className="lg:col-span-4 lg:sticky lg:top-28 flex flex-col items-start split-left-spine">
-            {/* Top Indicator */}
-            <div className="flex items-center gap-3 mb-6">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shadow-[0_0_10px_rgba(220,38,38,0.9)]" />
-              <span className="font-mono text-xs tracking-[0.3em] uppercase text-red-500 font-bold">
-                // 01 IDENTITY MATRIX
+
+          {/* ========================================================= */}
+          {/* LEFT COLUMN: INTERACTIVE CYBER PHOTO FRAME WITH ANIMATIONS */}
+          {/* ========================================================= */}
+          <div className="lg:col-span-5 profile-photo-container lg:sticky lg:top-24 flex flex-col items-center">
+
+            {/* Top Identity HUD Pill */}
+            <div className="w-full flex items-center justify-between mb-4 px-2">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
+                <span className="font-mono text-xs tracking-[0.25em] text-red-500 uppercase font-bold">
+                  // AGENT DOSSIER
+                </span>
+              </div>
+              <span className="font-mono text-[10px] text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                ONLINE / READY
               </span>
             </div>
 
-            {/* Huge Tokyo Manji Kanji Badge */}
-            <div className="relative mb-8 group">
-              <div className="text-7xl lg:text-8xl font-black text-white leading-none tracking-tight flex items-baseline gap-2">
-                <span>不撓</span>
-                <span className="text-red-600">不屈</span>
+            {/* 3D Holographic Photo Card */}
+            <div
+              ref={photoCardRef}
+              onMouseMove={handlePhotoMouseMove}
+              onMouseLeave={handlePhotoMouseLeave}
+              onMouseEnter={() => {
+                soundFx.playHover();
+                window.dispatchEvent(new CustomEvent("cursorHover", { detail: "KSHITIJ" }));
+              }}
+              className="relative w-full aspect-[4/5] rounded-3xl bg-zinc-950/90 border border-zinc-800/80 p-3.5 backdrop-blur-xl shadow-[0_0_50px_rgba(0,0,0,0.9)] overflow-hidden group cursor-none transition-colors duration-500 hover:border-red-600/60"
+              style={{ transformStyle: 'preserve-3d' }}
+            >
+              {/* Radial Cursor Follower Glow inside Card */}
+              <div
+                ref={photoGlowRef}
+                className="absolute top-0 left-0 w-64 h-64 bg-red-600/25 rounded-full blur-3xl pointer-events-none opacity-0 -translate-x-1/2 -translate-y-1/2"
+              />
+
+              {/* Holographic Red Laser Scanner Animation Overlay */}
+              <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent shadow-[0_0_15px_rgba(239,68,68,0.9)] opacity-70 z-30 pointer-events-none animate-cyberScan" />
+
+              {/* Main Portrait Image */}
+              <div className="relative w-full h-full rounded-2xl overflow-hidden bg-zinc-900">
+                <img
+                  src="/kshitij-portrait.jpg"
+                  alt="Kshitij Shinde - Software Developer"
+                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out filter contrast-105"
+                />
+
+                {/* Gradient Vignette Shade Over Image Bottom */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
+
+                {/* Corner Targeting Crosshairs [+] */}
+                <span className="absolute top-3 left-3 font-mono text-[10px] text-red-500/80 pointer-events-none select-none">[+]</span>
+                <span className="absolute top-3 right-3 font-mono text-[10px] text-red-500/80 pointer-events-none select-none">[+]</span>
+                <span className="absolute bottom-3 left-3 font-mono text-[10px] text-red-500/80 pointer-events-none select-none">[+]</span>
+                <span className="absolute bottom-3 right-3 font-mono text-[10px] text-red-500/80 pointer-events-none select-none">[+]</span>
+
+                {/* Overlaid Streetwear Badges on Photo */}
+                <div className="absolute bottom-4 inset-x-4 z-20 flex flex-col gap-1.5 pointer-events-none">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-bold text-white tracking-wider flex items-center gap-1.5">
+                      <span className="text-red-500 text-sm">卍</span>
+                      <span>KSHITIJ SHINDE</span>
+                    </span>
+                    <span className="font-mono text-[9px] text-red-400 bg-red-950/60 border border-red-800/50 px-2 py-0.5 rounded-full uppercase tracking-widest">
+                      1ST DIVISION
+                    </span>
+                  </div>
+                  <p className="font-mono text-[10px] text-zinc-400 tracking-wider">
+                    SOFTWARE DEVELOPER // CODE ✦ BUILD ✦ SOLVE
+                  </p>
+                </div>
               </div>
-              <p className="font-mono text-xs tracking-[0.25em] text-zinc-400 uppercase mt-2">
-                INDOMITABLE WILL // FIRST GEN ARCHITECT
-              </p>
             </div>
 
-            {/* Identity Profile Capsule */}
-            <div className="w-full bg-zinc-950/85 border border-zinc-800/90 rounded-2xl p-6 backdrop-blur-xl relative overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.8)]">
-              <div className="absolute top-0 right-0 px-3 py-1 font-mono text-[9px] text-red-500 bg-red-950/40 border-b border-l border-red-800/40 rounded-bl-xl uppercase tracking-widest">
-                ACTIVE
+            {/* Quick Status Bar Below Photo */}
+            <div className="w-full mt-4 bg-zinc-950/70 border border-zinc-850 p-4 rounded-2xl flex items-center justify-between font-mono text-xs text-zinc-400">
+              <div className="flex items-center gap-2">
+                <span className="text-red-500">⚡</span>
+                <span className="text-zinc-300">VIT Pune Engineer</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-zinc-600">//</span>
+                <span className="text-red-500 font-bold">2022 - 2026</span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* ========================================================= */}
+          {/* RIGHT COLUMN: STYLED FULL STACK PROFILE & ARSENAL         */}
+          {/* ========================================================= */}
+          <div className="lg:col-span-7 profile-right-content flex flex-col gap-8">
+
+            {/* 1. Header & Dynamic Title */}
+            <div className="profile-content-stagger">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse" />
+                <span className="font-mono text-xs tracking-[0.3em] uppercase text-red-500 font-bold">
+                  // THE ARCHITECT MANIFESTO // 初代総長
+                </span>
               </div>
 
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-red-950/30 border border-red-600/40 flex items-center justify-center text-2xl font-black text-red-500 shadow-[0_0_15px_rgba(220,38,38,0.25)]">
-                  卍
-                </div>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase text-white tracking-tight leading-[1.12]">
+                Architecting <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-red-600 to-amber-500">Resilient Full-Stack Systems</span> with Zero Compromise.
+              </h2>
+            </div>
+
+            {/* 2. Stylized Modern Narrative with Cyber Accents */}
+            <div className="profile-content-stagger space-y-4 text-zinc-300 text-sm md:text-base leading-relaxed bg-zinc-950/60 border border-zinc-850 p-6 md:p-8 rounded-3xl backdrop-blur-md relative overflow-hidden">
+              <div className="absolute top-0 right-0 px-4 py-1.5 font-mono text-[9px] text-zinc-500 uppercase tracking-widest bg-zinc-900/80 border-b border-l border-zinc-800 rounded-bl-2xl">
+                CORE_NARRATIVE
+              </div>
+
+              <p className="font-normal text-zinc-300">
+                I am a passionate <span className="text-white font-bold border-b border-red-600 pb-0.5">Full Stack Engineer</span> specializing in engineering high-concurrency enterprise backends and fusing them with smooth, 60fps GPU-accelerated web experiences.
+              </p>
+
+              <p className="text-zinc-400">
+                My engineering stack spans robust backend services with <strong className="text-zinc-200">Java</strong> and <strong className="text-zinc-200">Python</strong>, dynamic interactive motion with <strong className="text-zinc-200">React</strong> & GSAP, and rock-solid relational database integrity using <strong className="text-zinc-200">MySQL</strong> and <strong className="text-zinc-200">PostgreSQL</strong>.
+              </p>
+
+              {/* "Eager to Learn" Special Spotlight Callout */}
+              <div className="mt-4 p-4 rounded-2xl bg-red-950/20 border border-red-900/40 flex items-start gap-3">
+                <span className="text-xl text-red-500 shrink-0 mt-0.5">⚡</span>
                 <div>
-                  <h3 className="text-lg font-black text-white uppercase">Kshitij Shinde</h3>
-                  <p className="text-xs font-mono text-zinc-400">VIT Pune, India (2022–2026)</p>
-                </div>
-              </div>
-
-              <div className="space-y-2 text-xs font-mono text-zinc-400 border-t border-zinc-850 pt-4">
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">DIVISION:</span>
-                  <span className="text-white">壱番隊 (Architect)</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">CORE FOCUS:</span>
-                  <span className="text-red-400">Java & MERN</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">MENTORSHIP:</span>
-                  <span className="text-white">Workshop Lead</span>
+                  <h4 className="font-mono text-xs font-bold text-red-400 uppercase tracking-wider mb-1">
+                    Insatiable Curiosity & Continuous Evolution
+                  </h4>
+                  <p className="text-xs text-zinc-400 leading-relaxed">
+                    Always eager to explore and master emerging technologies, microservice designs, AI workflows, and performance optimization techniques to push beyond ordinary boundaries.
+                  </p>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* RIGHT COLUMN: 3 CASCADING CYBER PILLARS */}
-          <div className="lg:col-span-8 flex flex-col gap-8 split-right-cards">
-            
-            {/* CARD 01: BACKEND CONCURRENCY */}
-            <div
-              className="split-card bg-zinc-950/85 border border-zinc-800 hover:border-red-600/60 p-8 md:p-10 rounded-3xl backdrop-blur-xl transition-all duration-500 group relative overflow-hidden cursor-none shadow-[0_0_30px_rgba(0,0,0,0.6)]"
-              onMouseEnter={() => {
-                soundFx.playHover();
-                window.dispatchEvent(new CustomEvent("cursorHover", { detail: "BACKEND" }));
-              }}
-              onMouseLeave={() => window.dispatchEvent(new CustomEvent("cursorLeave"))}
-            >
+            {/* 3. Interactive Tech Power Nodes (Java, Python, React, MySQL, Postgres) */}
+            <div className="profile-content-stagger">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono text-red-500 tracking-widest uppercase font-bold">// 01 CORE ENGINE</span>
-                <span className="text-xs font-mono text-zinc-500 border border-zinc-800 px-2.5 py-0.5 rounded-full bg-zinc-900/50">JAVA & SPRING</span>
+                <span className="font-mono text-xs text-red-500 tracking-widest uppercase font-bold">
+                  // COMMAND MATRIX // PRIMARY ARSENAL
+                </span>
+                <span className="font-mono text-[10px] text-zinc-500">HOVER TO INSPECT CAPABILITIES</span>
               </div>
-              <h4 className="text-2xl md:text-3xl font-black text-white mb-3 group-hover:text-red-500 transition-colors leading-snug">
-                High-Throughput Backends & ACID Database Integrity
-              </h4>
-              <p className="text-zinc-400 text-sm md:text-base leading-relaxed mb-6">
-                Specializing in multithreaded Core Java execution, low-latency Spring Boot REST microservices, and database transaction locking with MySQL. Structured to handle high concurrency with zero race conditions.
-              </p>
-              <div className="flex flex-wrap gap-2 font-mono text-xs text-zinc-400 pt-4 border-t border-zinc-900">
-                <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">#Multithreading</span>
-                <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">#SpringBootREST</span>
-                <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">#ACIDTransactions</span>
-                <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">#Docker</span>
+
+              <div className="tech-nodes-grid grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {techArsenal.map((tech) => (
+                  <div
+                    key={tech.id}
+                    onMouseEnter={() => {
+                      soundFx.playHover();
+                      window.dispatchEvent(new CustomEvent("cursorHover", { detail: tech.id.toUpperCase() }));
+                    }}
+                    onMouseLeave={() => window.dispatchEvent(new CustomEvent("cursorLeave"))}
+                    className={`tech-power-node bg-zinc-950/80 border border-zinc-800/80 p-5 rounded-2xl hover:${tech.border} hover:bg-zinc-900/40 transition-all duration-300 group cursor-none relative overflow-hidden`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-2xl">{tech.icon}</span>
+                        <h4 className="text-white font-bold text-sm group-hover:text-red-400 transition-colors">
+                          {tech.name}
+                        </h4>
+                      </div>
+                      <span className="font-mono text-[9px] text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-full">
+                        {tech.tag}
+                      </span>
+                    </div>
+
+                    <p className="text-zinc-400 text-xs leading-relaxed mt-2">
+                      {tech.desc}
+                    </p>
+                  </div>
+                ))}
+
+                {/* 6th Node: Mentorship & Workshops */}
+                <div
+                  onMouseEnter={() => {
+                    soundFx.playHover();
+                    window.dispatchEvent(new CustomEvent("cursorHover", { detail: "MENTOR" }));
+                  }}
+                  onMouseLeave={() => window.dispatchEvent(new CustomEvent("cursorLeave"))}
+                  className="tech-power-node bg-zinc-950/80 border border-zinc-800/80 p-5 rounded-2xl hover:border-emerald-600/40 hover:bg-zinc-900/40 transition-all duration-300 group cursor-none relative overflow-hidden"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-2xl">🎓</span>
+                      <h4 className="text-white font-bold text-sm group-hover:text-emerald-400 transition-colors">
+                        Workshops & Mentorship
+                      </h4>
+                    </div>
+                    <span className="font-mono text-[9px] text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded-full">
+                      Instructor
+                    </span>
+                  </div>
+                  <p className="text-zinc-400 text-xs leading-relaxed mt-2">
+                    Conducting hands-on educational programming workshops for young children to ignite curiosity and foster future tech builders.
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* CARD 02: 60FPS MOTION & SOUND */}
-            <div
-              className="split-card bg-zinc-950/85 border border-zinc-800 hover:border-red-600/60 p-8 md:p-10 rounded-3xl backdrop-blur-xl transition-all duration-500 group relative overflow-hidden cursor-none shadow-[0_0_30px_rgba(0,0,0,0.6)]"
-              onMouseEnter={() => {
-                soundFx.playHover();
-                window.dispatchEvent(new CustomEvent("cursorHover", { detail: "MOTION" }));
-              }}
-              onMouseLeave={() => window.dispatchEvent(new CustomEvent("cursorLeave"))}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono text-red-500 tracking-widest uppercase font-bold">// 02 FRONTEND MOTOR</span>
-                <span className="text-xs font-mono text-zinc-500 border border-zinc-800 px-2.5 py-0.5 rounded-full bg-zinc-900/50">REACT & GSAP</span>
+            {/* 4. Bottom Quick Telemetry Badges */}
+            <div className="profile-content-stagger flex flex-wrap gap-3 pt-4 border-t border-zinc-900 font-mono text-xs">
+              <div className="px-3.5 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-300 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span>Zero-Lag 60fps UI</span>
               </div>
-              <h4 className="text-2xl md:text-3xl font-black text-white mb-3 group-hover:text-red-500 transition-colors leading-snug">
-                60fps Cinematic Motion & Real-Time Audio Synthesis
-              </h4>
-              <p className="text-zinc-400 text-sm md:text-base leading-relaxed mb-6">
-                Crafting state-of-the-art interactive web experiences with React 19, GSAP ScrollTrigger pinned timelines, Lenis inertia physics, and custom zero-asset Web Audio API synthesizers.
-              </p>
-              <div className="flex flex-wrap gap-2 font-mono text-xs text-zinc-400 pt-4 border-t border-zinc-900">
-                <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">#React19</span>
-                <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">#GSAPScrollTrigger</span>
-                <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">#LenisPhysics</span>
-                <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">#WebAudioSynth</span>
+              <div className="px-3.5 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-300 flex items-center gap-2">
+                <span className="text-red-500">✦</span>
+                <span>ACID Database Row-Locking</span>
               </div>
-            </div>
-
-            {/* CARD 03: WORKSHOPS & LEADERSHIP */}
-            <div
-              className="split-card bg-zinc-950/85 border border-zinc-800 hover:border-red-600/60 p-8 md:p-10 rounded-3xl backdrop-blur-xl transition-all duration-500 group relative overflow-hidden cursor-none shadow-[0_0_30px_rgba(0,0,0,0.6)]"
-              onMouseEnter={() => {
-                soundFx.playHover();
-                window.dispatchEvent(new CustomEvent("cursorHover", { detail: "MENTOR" }));
-              }}
-              onMouseLeave={() => window.dispatchEvent(new CustomEvent("cursorLeave"))}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono text-red-500 tracking-widest uppercase font-bold">// 03 GIVING BACK</span>
-                <span className="text-xs font-mono text-emerald-400 bg-emerald-950/30 border border-emerald-800/40 px-2.5 py-0.5 rounded-full">INSTRUCTOR</span>
-              </div>
-              <h4 className="text-2xl md:text-3xl font-black text-white mb-3 group-hover:text-red-500 transition-colors leading-snug">
-                Leading Workshops & Inspiring Future Builders
-              </h4>
-              <p className="text-zinc-400 text-sm md:text-base leading-relaxed mb-6">
-                Active student leader and instructor conducting hands-on educational programming workshops for young children and students. Committed to continuous growth, algorithmic mastery, and community impact.
-              </p>
-              <div className="flex flex-wrap gap-2 font-mono text-xs text-zinc-400 pt-4 border-t border-zinc-900">
-                <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">#WorkshopInstructor</span>
-                <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">#VITPune</span>
-                <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">#TechEducation</span>
-                <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">#LinkedInCertified</span>
+              <div className="px-3.5 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-300 flex items-center gap-2">
+                <span className="text-emerald-400">✦</span>
+                <span>Always Eager to Learn</span>
               </div>
             </div>
 
           </div>
+
         </div>
       </div>
     </section>
@@ -964,7 +1208,7 @@ export default function App() {
       });
     }, 120);
     return () => clearInterval(interval);
-  }, []);
+  }, [words.length]);
 
   // 4. GSAP Master Preloader & Entrance Animations
   useGSAP(() => {
@@ -1001,45 +1245,6 @@ export default function App() {
             end: () => `+=${totalScroll}`,
             invalidateOnRefresh: true,
           }
-        });
-      }
-
-      // Progressive ScrollTriggers for Final Hybrid Streetwear + Kinetic Manifesto
-      gsap.fromTo(
-        ".split-left-spine",
-        { x: -60, opacity: 0 },
-        {
-          x: 0,
-          opacity: 1,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: ".mini-about-section",
-            start: "top 75%",
-            end: "top 35%",
-            scrub: 0.6,
-          },
-        }
-      );
-
-      const splitCards = containerRef.current?.querySelectorAll(".split-card");
-      if (splitCards && splitCards.length > 0) {
-        splitCards.forEach((card) => {
-          gsap.fromTo(
-            card,
-            { y: 75, opacity: 0, scale: 0.96 },
-            {
-              y: 0,
-              opacity: 1,
-              scale: 1,
-              ease: "power2.out",
-              scrollTrigger: {
-                trigger: card,
-                start: "top 88%",
-                end: "top 55%",
-                scrub: 0.5,
-              },
-            }
-          );
         });
       }
 
@@ -1125,12 +1330,18 @@ export default function App() {
           </div>
         </div>
 
-        {/* Mikey Character Image in Center */}
+        {/* Subtle Backlight Rim Glow directly behind Character */}
+        <div
+          className="absolute bottom-10 z-15 w-[320px] md:w-[450px] h-[320px] md:h-[450px] rounded-full pointer-events-none opacity-30 blur-3xl"
+          style={{ background: 'radial-gradient(circle, rgba(220, 38, 38, 0.4) 0%, transparent 70%)' }}
+        />
+
+        {/* Main Character Image in Center */}
         <img
           ref={characterRef}
-          src="/mikey-character.png"
-          alt="Mikey"
-          className="absolute bottom-0 z-20 h-[78vh] md:h-[90vh] object-contain will-change-transform drop-shadow-2xl"
+          src="/kshitij-hero.png"
+          alt="Kshitij Shinde"
+          className="absolute bottom-0 z-20 h-[78vh] md:h-[90vh] object-contain will-change-transform hero-character-graded"
         />
 
         {/* Corner HUD Telemetry Badges (Unobstructed by character) */}
@@ -1153,9 +1364,9 @@ export default function App() {
       </section>
 
       {/* ========================================================================= */}
-      {/* TRANSITION SECTION: MINI ABOUT / MANIFESTO (STREETWEAR + KINETIC RIBBON)  */}
+      {/* TRANSITION SECTION: THE ARCHITECT (PHOTO + FULL STACK PROFILE MANIFESTO) */}
       {/* ========================================================================= */}
-      <StreetwearKineticManifesto />
+      <ArchitectProfileSection />
 
       {/* SCENE 2: PINNED HORIZONTAL GALLERY */}
       <section ref={horizontalSectionRef} id="projects" className="projects-section relative w-full h-screen bg-black z-40 border-t border-zinc-900 overflow-hidden flex flex-col justify-center">

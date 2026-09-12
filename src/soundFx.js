@@ -64,7 +64,7 @@ class SoundController {
 
       osc.start();
       osc.stop(this.audioCtx.currentTime + 0.04);
-    } catch (e) {
+    } catch {
       // Audio context safety fallback
     }
   }
@@ -90,7 +90,7 @@ class SoundController {
 
       osc.start();
       osc.stop(this.audioCtx.currentTime + 0.08);
-    } catch (e) {
+    } catch {
       // Audio context safety fallback
     }
   }
