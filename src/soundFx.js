@@ -69,6 +69,23 @@ class SoundController {
     }
   }
 
+  playCollision(v = 0.5) {
+    if (!this.enabled || !this.audioCtx) return;
+    const t = this.audioCtx.currentTime;
+    const o = this.audioCtx.createOscillator();
+    const g = this.audioCtx.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(380 + v * 520, t);
+    o.frequency.exponentialRampToValueAtTime(140, t + 0.09);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.04 + v * 0.06, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+    o.connect(g);
+    g.connect(this.audioCtx.destination);
+    o.start(t);
+    o.stop(t + 0.12);
+  }
+
   playClick() {
     if (!this.enabled) return;
     this.init();
